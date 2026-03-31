@@ -1,0 +1,328 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Courier+Prime:wght@400;700&display=swap');
+
+:root {
+  /* Obsidian Design Tokens (Dark Default) */
+  --bg-primary: #171717;
+  --bg-secondary: #202020;
+  --bg-card: #262626;
+  --bg-glass: rgba(255, 255, 255, 0.03); /* Keep for some components */
+  --border-glass: #2e2e2e;
+  --border-hover: #3f3f3f;
+
+  --text-primary: #f5f5f5;
+  --text-secondary: #b2b2b2;
+  --text-muted: #717171;
+
+  --accent-violet: #7b61ff;
+  --accent-cyan: #00bcd4;
+  --accent-amber: #fbbf24;
+  --accent-emerald: #34d399;
+  --accent-rose: #f87171;
+
+  --char-color: #00bcd4;
+  --prop-color: #fbbf24;
+  --loc-color: #34d399;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-script: 'Courier Prime', 'Courier New', monospace;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+
+  --glow-violet: 0 0 20px rgba(123, 97, 255, 0.1);
+  --glow-cyan: none;
+}
+
+.light {
+  /* Notion Design Tokens (Light Theme) */
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7f6f3;
+  --bg-card: #ffffff;
+  --bg-glass: rgba(247, 246, 243, 0.8);
+  --border-glass: rgba(55, 53, 47, 0.09);
+  --border-hover: rgba(55, 53, 47, 0.16);
+
+  --text-primary: #37352f;
+  --text-secondary: rgba(55, 53, 47, 0.65);
+  --text-muted: rgba(55, 53, 47, 0.45);
+
+  --accent-violet: #693147;
+  --accent-cyan: #0c85d0;
+  --accent-amber: #dfab01;
+  --accent-emerald: #0f7b6c;
+  --accent-rose: #d44c47;
+
+  --char-color: #0c85d0;
+  --prop-color: #dfab01;
+  --loc-color: #0f7b6c;
+
+  --glow-violet: none;
+  --glow-cyan: none;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-hover);
+  border: 2px solid var(--bg-primary);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* === Obsidian/Notion Card === */
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.glass-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: none;
+}
+
+/* === Glass Panel === */
+.glass-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* === Mention Chips === */
+.mention-character {
+  background: var(--bg-secondary);
+  color: var(--char-color);
+  border: 1px solid var(--border-glass);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.mention-character:hover {
+  background: var(--bg-glass);
+  border-color: var(--char-color);
+}
+
+.mention-prop {
+  background: var(--bg-secondary);
+  color: var(--prop-color);
+  border: 1px solid var(--border-glass);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+.mention-location {
+  background: var(--bg-secondary);
+  color: var(--loc-color);
+  border: 1px solid var(--border-glass);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: pointer;
+}
+
+/* === TipTap Editor === */
+.tiptap-editor {
+  font-family: var(--font-ui);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  min-height: 400px;
+  padding: 40px MAX(24px, 15%);
+  outline: none;
+}
+.tiptap-editor p {
+  margin-bottom: 0.75em;
+}
+
+/* === Suggestion Dropdown === */
+.suggestion-dropdown {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 4px;
+}
+.suggestion-item.is-selected {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* === Button Styles === */
+.btn-primary {
+  background: var(--accent-violet);
+  color: white;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(0,0,0,0.1);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+.btn-primary:hover {
+  opacity: 0.9;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-ghost:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-glass);
+}
+
+/* === Input Styles === */
+.input-glass {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+}
+.input-glass:focus {
+  border-color: var(--accent-violet);
+  box-shadow: 0 0 0 2px var(--bg-secondary);
+}
+
+.input-glass.border-error {
+  border-color: #ff4d4d !important;
+}
+
+/* === Tab System === */
+.tab-container {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+}
+.tab-item {
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+.tab-item:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.tab-item.active {
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+}
+
+/* === Breakdown Table === */
+.breakdown-table thead th {
+  background: var(--bg-secondary);
+  padding: 10px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-glass);
+}
+.breakdown-table tbody td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+/* === Ambient background noise === */
+.ambient-glow {
+  display: none; /* Removed for more professional look */
+}
+
+/* === Asset Hover Card === */
+.asset-hover-card {
+  animation: hoverCardFadeIn 0.2s ease-out;
+}
+
+@keyframes hoverCardFadeIn {
+  from { opacity: 0; transform: translateY(5px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mention-wrapper {
+  display: inline-block !important;
+}
+
+/* Ensure mentions still look like chips when not hovered */
+.mention-character, .mention-prop, .mention-location {
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  font-weight: 500 !important;
+  margin: 0 2px !important;
+  text-decoration: none !important;
+}
+@keyframes pulse-green {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 218, 123, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(74, 218, 123, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 218, 123, 0); }
+}
+
+/* === Script Writer Drag Collapse === */
+body.is-dragging-script .script-box-body {
+  display: none !important;
+}
+body.is-dragging-script .script-box-item {
+  height: 40px !important;
+  margin-bottom: 8px !important;
+  opacity: 0.8 !important;
+  transition: none !important;
+}
+body.is-dragging-script .script-box-item * {
+  pointer-events: none !important;
+}
+body.is-dragging-script .script-box-item [data-drag-handle="true"] {
+  pointer-events: auto !important;
+}
