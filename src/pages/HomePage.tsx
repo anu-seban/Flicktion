@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '@/stores/useProjectStore';
 import { GENRES } from '@/lib/constants';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import { exportProject, importProjectFromFile } from '@/lib/projectService';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export default function HomePage() {
   const [title, setTitle] = useState('');
   const [logline, setLogline] = useState('');
   const [genre, setGenre] = useState('Drama');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCreate = () => {
     if (!title.trim()) return;
@@ -26,8 +29,26 @@ export default function HomePage() {
     navigate(`/project/${id}/story`);
   };
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const projectId = await importProjectFromFile(file);
+      navigate(`/project/${projectId}/story`);
+    } catch (err) {
+      alert('Failed to import project. Please check the file format.');
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', position: 'relative', zIndex: 1 }}>
+      <input
+        type="file"
+        ref={fileInputRef}
+        style={{ display: 'none' }}
+        accept=".json"
+        onChange={handleImport}
+      />
       {/* Header */}
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -47,6 +68,9 @@ export default function HomePage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <ThemeToggle />
+          <button className="btn-ghost" onClick={() => fileInputRef.current?.click()} id="import-project-btn">
+            Import Project
+          </button>
           <button className="btn-primary" onClick={() => setShowModal(true)} id="new-production-header-btn">
             + New Production
           </button>
@@ -70,9 +94,14 @@ export default function HomePage() {
             <p style={{ color: 'var(--text-muted)', fontSize: '16px', marginBottom: '24px' }}>
               No productions yet. Create your first one to get started.
             </p>
-            <button className="btn-primary" onClick={() => setShowModal(true)} id="new-production-empty-btn">
-              + Create Production
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
+              <button className="btn-ghost" onClick={() => fileInputRef.current?.click()}>
+                Import Project
+              </button>
+              <button className="btn-primary" onClick={() => setShowModal(true)} id="new-production-empty-btn">
+                + Create Production
+              </button>
+            </div>
           </div>
         ) : (
           <div style={{
@@ -102,10 +131,16 @@ export default function HomePage() {
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                     {new Date(prod.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </span>
-                  <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: '12px' }}
-                    onClick={(e) => { e.stopPropagation(); deleteProduction(prod.id); }}>
-                    Delete
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: '12px' }}
+                      onClick={(e) => { e.stopPropagation(); exportProject(prod.id); }}>
+                      Export
+                    </button>
+                    <button className="btn-ghost" style={{ padding: '4px 10px', fontSize: '12px', color: 'var(--accent-red)' }}
+                      onClick={(e) => { e.stopPropagation(); deleteProduction(prod.id); }}>
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

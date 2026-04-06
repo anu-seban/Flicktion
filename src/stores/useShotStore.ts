@@ -12,12 +12,22 @@ interface ShotStore {
   updateShot: (projectId: string, shotId: string, updates: Partial<Shot>) => void;
   removeShot: (projectId: string, shotId: string) => void;
   getShotsBySegment: (projectId: string, segmentId: string) => Shot[];
+  importShotData: (projectId: string, shots: Shot[]) => void;
 }
 
 export const useShotStore = create<ShotStore>()(
   persist(
     (set, get) => ({
       shots: {},
+
+      importShotData: (projectId, shots) => {
+        set((state) => ({
+          shots: {
+            ...state.shots,
+            [projectId]: shots
+          }
+        }));
+      },
 
       addShot: (projectId, segmentId, data) => {
         const currentShots = get().shots[projectId] || [];

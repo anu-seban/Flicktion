@@ -62,6 +62,11 @@ export interface Location extends BaseEntity {
 
 export type Entity = Character | Prop | Location;
 
+export interface BeatTag {
+  label: string;
+  color: string;
+}
+
 // === Story Beat Node ===
 export interface StoryBeat {
   id: string;
@@ -72,6 +77,7 @@ export interface StoryBeat {
   beatType: 'inciting' | 'rising' | 'climax' | 'falling' | 'resolution';
   entityRefs: string[];
   position: { x: number; y: number };
+  tags?: BeatTag[];
 }
 
 // === Story Connection (Edge) ===
@@ -124,7 +130,13 @@ export interface Shot {
   subjects: string[], // List of entity names/IDs
 }
 
-// === Script Segment ===
+export interface ScriptColumn {
+  id: string;
+  name: string;
+  content: any; // TipTap JSON
+}
+
+// === Script Segment (Dynamic Multi-Column Row) ===
 export interface ScriptSegment {
   id: string;
   projectId: string;

@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import './app/globals.css';
+import './styles/globals.css';
 
 import HomePage from './pages/HomePage';
 import ProjectLayout from './pages/ProjectLayout';

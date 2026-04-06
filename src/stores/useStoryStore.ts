@@ -24,6 +24,7 @@ interface StoryStore {
   getNodes: (projectId: string) => Node[];
   getEdges: (projectId: string) => Edge[];
   syncFromFlow: (projectId: string, nodes: Node[], edges: Edge[]) => void;
+  importStoryData: (projectId: string, beats: StoryBeat[], connections: StoryConnection[]) => void;
 }
 
 export const useStoryStore = create<StoryStore>()(
@@ -31,6 +32,19 @@ export const useStoryStore = create<StoryStore>()(
     (set, get) => ({
       beats: {},
       connections: {},
+
+      importStoryData: (projectId, beats, connections) => {
+        set((state) => ({
+          beats: {
+            ...state.beats,
+            [projectId]: beats
+          },
+          connections: {
+            ...state.connections,
+            [projectId]: connections
+          }
+        }));
+      },
 
       addBeat: (projectId, partial) => {
         const beat: StoryBeat = {
@@ -42,6 +56,7 @@ export const useStoryStore = create<StoryStore>()(
           beatType: partial.beatType || 'rising',
           entityRefs: partial.entityRefs || [],
           position: partial.position || { x: Math.random() * 400, y: Math.random() * 300 },
+          tags: partial.tags || [],
         };
         set((state) => ({
           beats: {

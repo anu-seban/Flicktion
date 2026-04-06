@@ -4,7 +4,7 @@ import ReactFlow, {
   Controls, MiniMap, Background,
   useNodesState, useEdgesState, addEdge,
   Connection, Node, ReactFlowInstance, BackgroundVariant,
-  Handle, Position,
+  Handle, Position, SelectionMode,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useStoryStore } from '@/stores/useStoryStore';
@@ -14,6 +14,154 @@ import { StoryBeat, StoryConnection } from '@/lib/types';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { createMentionExtensions } from '@/lib/mentions';
+import { Node as FlowNode } from 'reactflow';
+
+const TAG_COLORS = [
+  '#60a5fa', // Blue
+  '#fbbf24', // Amber
+  '#8b5cf6', // Violet
+  '#f87171', // Red
+  '#34d399', // Emerald
+  '#f97316', // Orange
+  '#ec4899', // Pink
+  '#06b6d4', // Cyan
+];
+
+function BeatContextMenu({ menuTop, menuLeft, affectedBeats, allProjectTags, onAddTag, onRemoveTag, onClose }: any) {
+  const [newTagLabel, setNewTagLabel] = useState('');
+  const [selectedColor, setSelectedColor] = useState(TAG_COLORS[0]);
+
+  const handleAdd = () => {
+    if (newTagLabel.trim()) {
+      onAddTag({ label: newTagLabel.trim(), color: selectedColor });
+      setNewTagLabel('');
+    }
+  };
+
+  const isBulk = affectedBeats.length > 1;
+
+  // Filter project tags to only show ones not already on ALL affected beats
+  const availableTags = allProjectTags.filter(
+    (pt: any) => !affectedBeats.every((beat: any) => beat.tags?.some((bt: any) => bt.label === pt.label))
+  );
+
+  return (
+    <div 
+      className="glass-panel"
+      style={{
+        position: 'fixed',
+        zIndex: 5000,
+        padding: '16px',
+        minWidth: '240px',
+        background: 'rgba(18, 18, 18, 0.98)',
+        border: '1px solid var(--border-glass)',
+        boxShadow: '0 20px 50px rgba(0,0,0,0.8)',
+        borderRadius: 'var(--radius-lg)',
+        backdropFilter: 'blur(32px)',
+        top: `${menuTop - 12}px`,
+        left: `${menuLeft}px`,
+        transform: 'translate(-50%, -100%)',
+        animation: 'scaleIn 0.2s ease-out'
+      }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+        <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em' }}>
+          {isBulk ? `Tag ${affectedBeats.length} Beats` : 'Beat Tags'}
+        </div>
+        {isBulk && <span style={{ fontSize: '9px', background: 'var(--accent-violet)22', color: 'var(--accent-violet)', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>Bulk Mode</span>}
+      </div>
+      
+      {/* Existing Tags (Only show for single-node to avoid confusion) */}
+      {!isBulk && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' }}>
+          {affectedBeats[0].tags && affectedBeats[0].tags.length > 0 ? (
+            affectedBeats[0].tags.map((tag: any, i: number) => (
+              <div key={i} style={{ 
+                display: 'flex', alignItems: 'center', gap: '6px', 
+                background: tag.color + '15', color: tag.color, 
+                padding: '4px 8px', borderRadius: '6px', fontSize: '10px', 
+                fontWeight: '700', border: `1px solid ${tag.color}44` 
+              }}>
+                {tag.label}
+                <button 
+                  onClick={() => onRemoveTag(i)} 
+                  style={{ border: 'none', background: 'none', color: tag.color, cursor: 'pointer', padding: '0 2px', opacity: 0.7, fontSize: '12px' }}
+                >✕</button>
+              </div>
+            ))
+          ) : (
+            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontStyle: 'italic', padding: '4px 0' }}>No tags yet</div>
+          )}
+        </div>
+      )}
+
+      {availableTags.length > 0 && (
+        <div style={{ marginBottom: '16px', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', fontWeight: 900, letterSpacing: '0.1em' }}>Project Tag Library</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+            {availableTags.map((tag: any, i: number) => (
+              <button
+                key={i}
+                onClick={() => onAddTag(tag)}
+                style={{
+                  fontSize: '9px', padding: '4px 8px', borderRadius: '4px',
+                  background: tag.color + '10', color: tag.color,
+                  border: `1px solid ${tag.color}22`,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = tag.color + '22'}
+                onMouseLeave={(e) => e.currentTarget.style.background = tag.color + '10'}
+              >
+                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: tag.color }} />
+                {tag.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Add New Tag Section */}
+      <div style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '16px' }}>
+        <div style={{ marginBottom: '12px' }}>
+          <label style={{ display: 'block', fontSize: '9px', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '6px', textTransform: 'uppercase' }}>Add Custom Tag</label>
+          <input 
+            className="input-glass" 
+            placeholder="Tag name..." 
+            value={newTagLabel} 
+            onChange={(e) => setNewTagLabel(e.target.value)}
+            style={{ width: '100%', fontSize: '11px', marginBottom: '8px', padding: '8px 12px' }}
+            onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+            autoFocus
+          />
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '12px' }}>
+            {TAG_COLORS.map(color => (
+              <button 
+                key={color} 
+                onClick={() => setSelectedColor(color)}
+                style={{ 
+                  width: '18px', height: '18px', borderRadius: '50%', 
+                  background: color, border: selectedColor === color ? '2px solid white' : '2px solid transparent',
+                  cursor: 'pointer', padding: 0, boxShadow: selectedColor === color ? `0 0 8px ${color}` : 'none',
+                  transition: 'all 0.2s'
+                }}
+              />
+            ))}
+          </div>
+        </div>
+        <button 
+          className="btn-primary" 
+          onClick={handleAdd} 
+          disabled={!newTagLabel.trim()}
+          style={{ width: '100%', fontSize: '11px', padding: '8px', fontWeight: '700' }}
+        >
+          + Add Tag
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function BeatNode({ data, selected }: { data: any; selected: boolean }) {
   const { updateBeat } = useStoryStore();
@@ -46,13 +194,30 @@ function BeatNode({ data, selected }: { data: any; selected: boolean }) {
       style={{
         padding: '12px 16px', borderRadius: 'var(--radius-md)',
         background: selected ? 'var(--bg-secondary)' : 'var(--bg-card)',
-        border: `1.5px solid ${selected ? 'var(--accent-violet)' : 'var(--border-glass)'}`,
+        border: selected ? '1.5px solid var(--accent-violet)' : '1.5px solid var(--border-glass)',
         minWidth: '200px', maxWidth: '280px',
         transition: 'all 0.15s',
         boxShadow: selected ? '0 0 0 2px var(--bg-primary), 0 0 0 4px var(--accent-violet)44' : '0 1px 3px rgba(0,0,0,0.05)',
         position: 'relative',
       }}
     >
+      {/* Tags Container */}
+      <div style={{
+        position: 'absolute', top: '-14px', left: '8px',
+        display: 'flex', gap: '4px', zIndex: -1
+      }}>
+        {data.tags?.map((tag: any, i: number) => (
+          <div key={i} style={{
+            fontSize: '8px', fontWeight: '900', color: 'white',
+            background: tag.color,
+            padding: '2px 8px', borderRadius: '4px 4px 0 0',
+            textTransform: 'uppercase', letterSpacing: '0.05em',
+            boxShadow: `0 -2px 10px ${tag.color}33`,
+          }}>
+            {tag.label}
+          </div>
+        ))}
+      </div>
       {/* Script Link Indicator */}
       {isLinked && (
         <div 
@@ -200,6 +365,85 @@ export default function StoryPage() {
   const [edges, setEdges, onEdgesChange] = useEdgesState(getEdges(pid));
   const [selectedBeat, setSelectedBeat] = useState<StoryBeat | null>(null);
   const [modalState, setModalState] = useState<{ isOpen: boolean; mode: 'create' | 'edit' }>({ isOpen: false, mode: 'create' });
+  const [menu, setMenu] = useState<{ id: string; affectedBeats: StoryBeat[]; top: number; left: number } | null>(null);
+
+  const allProjectTags = Array.from(
+    nodes.reduce((acc, node) => {
+      const beatTags = (node.data as StoryBeat).tags || [];
+      beatTags.forEach((tag: any) => {
+        if (!acc.has(tag.label)) {
+          acc.set(tag.label, tag.color);
+        }
+      });
+      return acc;
+    }, new Map<string, string>())
+  ).map(([label, color]) => ({ label, color }));
+
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: FlowNode) => {
+      event.preventDefault();
+      const pane = reactFlowWrapper.current?.getBoundingClientRect();
+      if (!pane) return;
+
+      // Use .closest() for precise anchoring to the node DOM element
+      const nodeElement = (event.target as HTMLElement).closest('.react-flow__node');
+      const nodeRect = nodeElement?.getBoundingClientRect();
+      
+      if (!nodeRect) return;
+
+      const selectedNodesCount = nodes.filter(n => n.selected).length;
+      const isPartOfBulk = selectedNodesCount > 1 && nodes.find(n => n.id === node.id)?.selected;
+      
+      const affectedBeats = isPartOfBulk
+        ? nodes.filter(n => n.selected).map(sn => sn.data as StoryBeat)
+        : [node.data as StoryBeat];
+
+      setMenu({ 
+        id: node.id, 
+        affectedBeats, 
+        top: nodeRect.top,
+        left: nodeRect.left + nodeRect.width / 2 
+      });
+    },
+    [setMenu, nodes]
+  );
+
+  const onPaneClick = useCallback(() => setMenu(null), [setMenu]);
+
+  const handleAddTag = useCallback((tag: { label: string; color: string }) => {
+    if (!menu) return;
+    
+    const newBeats = menu.affectedBeats.map(beat => {
+      const currentTags = beat.tags || [];
+      if (currentTags.some(t => t.label === tag.label)) return beat;
+      return { ...beat, tags: [...currentTags, tag] };
+    });
+    
+    newBeats.forEach(beat => updateBeat(pid, beat.id, { tags: beat.tags }));
+    
+    setNodes((nds) => nds.map((n) => {
+      const ub = newBeats.find(beat => beat.id === n.id);
+      return ub ? { ...n, data: { ...n.data, tags: ub.tags } } : n;
+    }));
+    
+    setMenu(null);
+  }, [menu, pid, updateBeat, setNodes]);
+
+  const handleRemoveTag = useCallback((index: number) => {
+    if (!menu) return;
+    
+    // Only support removal for single selection or just the right-clicked beat
+    const targetBeat = menu.affectedBeats[0];
+    const newTags = (targetBeat.tags || []).filter((_, i) => i !== index);
+    
+    updateBeat(pid, targetBeat.id, { tags: newTags });
+    setNodes((nds) => nds.map((n) => (n.id === targetBeat.id ? { 
+      ...n, 
+      data: { ...n.data, tags: newTags } 
+    } : n)));
+    
+    setMenu(null);
+  }, [menu, pid, updateBeat, setNodes]);
 
   const onConnect = useCallback((connection: Connection) => {
     if (connection.source && connection.target) {
@@ -342,9 +586,13 @@ export default function StoryPage() {
           onNodeDoubleClick={onNodeDoubleClick}
           onNodeDragStop={(_, node) => syncFromFlow(pid, nodes, edges)}
           onInit={setReactFlowInstance}
+          onNodeContextMenu={onNodeContextMenu}
+          onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
           snapToGrid={true}
           snapGrid={[20, 20]}
+          selectionOnDrag={true}
+          selectionMode={SelectionMode.Partial}
           fitView
           style={{ background: 'var(--bg-primary)' }}
           deleteKeyCode={['Backspace', 'Delete']}
@@ -375,6 +623,18 @@ export default function StoryPage() {
           onClose={() => setModalState({ ...modalState, isOpen: false })}
           onSave={handleSaveModal}
           onDelete={handleDeleteBeat}
+        />
+      )}
+
+      {menu && (
+        <BeatContextMenu
+          affectedBeats={menu.affectedBeats}
+          allProjectTags={allProjectTags}
+          onAddTag={handleAddTag}
+          onRemoveTag={handleRemoveTag}
+          onClose={() => setMenu(null)}
+          menuTop={menu.top}
+          menuLeft={menu.left}
         />
       )}
     </div>

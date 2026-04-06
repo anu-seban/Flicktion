@@ -10,16 +10,27 @@ interface ScriptStore {
   segments: Record<string, ScriptSegment[]>;
 
   addSegment: (projectId: string, beatId?: string) => void;
+  insertSegment: (projectId: string, index: number) => void;
   updateSegment: (projectId: string, segmentId: string, updates: Partial<ScriptSegment>) => void;
   removeSegment: (projectId: string, segmentId: string) => void;
   reorderSegments: (projectId: string, segments: ScriptSegment[]) => void;
   getSegments: (projectId: string) => ScriptSegment[];
+  importScriptData: (projectId: string, segments: ScriptSegment[]) => void;
 }
 
 export const useScriptStore = create<ScriptStore>()(
   persist(
     (set, get) => ({
       segments: {},
+
+      importScriptData: (projectId, segments) => {
+        set((state) => ({
+          segments: {
+            ...state.segments,
+            [projectId]: segments
+          }
+        }));
+      },
 
       addSegment: (projectId, beatId) => {
         const newSegment: ScriptSegment = {
@@ -34,6 +45,25 @@ export const useScriptStore = create<ScriptStore>()(
             [projectId]: [...(state.segments[projectId] || []), newSegment],
           },
         }));
+      },
+
+      insertSegment: (projectId, index) => {
+        const newSegment: ScriptSegment = {
+          id: uuidv4(),
+          projectId,
+          content: { type: 'doc', content: [{ type: 'paragraph' }] },
+        };
+        set((state) => {
+          const currentSegments = state.segments[projectId] || [];
+          const newSegments = [...currentSegments];
+          newSegments.splice(index + 1, 0, newSegment);
+          return {
+            segments: {
+              ...state.segments,
+              [projectId]: newSegments,
+            },
+          };
+        });
       },
 
       updateSegment: (projectId, segmentId, updates) => {
@@ -67,6 +97,6 @@ export const useScriptStore = create<ScriptStore>()(
 
       getSegments: (projectId) => get().segments[projectId] || [],
     }),
-    { name: 'cineflow-scripts-v3' } // Version bump for schema change
+    { name: 'cineflow-scripts-v6' } // Version bump for schema change
   )
 );

@@ -15,6 +15,7 @@ interface ProjectStore {
   deleteProduction: (id: string) => void;
   setActiveProject: (id: string | null) => void;
   getActiveProduction: () => Production | undefined;
+  importProject: (project: Production) => void;
 }
 
 export const useProjectStore = create<ProjectStore>()(
@@ -48,14 +49,28 @@ export const useProjectStore = create<ProjectStore>()(
         }));
       },
 
-      deleteProduction: (id) => {
+      importProject: (project) => {
+        set((state) => {
+          const exists = state.productions.some(p => p.id === project.id);
+          const newProductions = exists
+            ? state.productions.map(p => p.id === project.id ? project : p)
+            : [...state.productions, project];
+          
+          return {
+            productions: newProductions,
+            activeProjectId: project.id
+          };
+        });
+      },
+
+      deleteProduction: (id: string) => {
         set((state) => ({
           productions: state.productions.filter((p) => p.id !== id),
           activeProjectId: state.activeProjectId === id ? null : state.activeProjectId,
         }));
       },
 
-      setActiveProject: (id) => set({ activeProjectId: id }),
+      setActiveProject: (id: string | null) => set({ activeProjectId: id }),
 
       getActiveProduction: () => {
         const state = get();

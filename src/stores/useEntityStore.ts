@@ -26,6 +26,7 @@ interface EntityStore {
   // Modal State
   editingEntityId: string | null;
   setEditingEntityId: (id: string | null) => void;
+  importEntities: (projectId: string, entities: Entity[]) => void;
 }
 
 export const useEntityStore = create<EntityStore>()(
@@ -33,6 +34,16 @@ export const useEntityStore = create<EntityStore>()(
     (set, get) => ({
       entities: [],
       editingEntityId: null,
+
+      importEntities: (projectId, newEntities) => {
+        set((state) => {
+          // Remove old entities for this project and add new ones
+          const otherProjectEntities = state.entities.filter(e => e.projectId !== projectId);
+          return {
+            entities: [...otherProjectEntities, ...newEntities]
+          };
+        });
+      },
 
       addCharacter: (projectId, name, partial = {}) => {
         const now = new Date().toISOString();

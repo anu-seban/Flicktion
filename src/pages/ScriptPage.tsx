@@ -7,13 +7,51 @@ import { useStoryStore } from '@/stores/useStoryStore';
 import { createMentionExtensions } from '@/lib/mentions';
 import { ScriptSegment } from '@/lib/types';
 import { Reorder, useDragControls } from 'framer-motion';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+
+// === Column Editor Component ===
+function ScriptColumnEditor({ 
+  content, 
+  projectId, 
+  placeholder,
+  onUpdate 
+}: { 
+  content: any; 
+  projectId: string; 
+  placeholder?: string;
+  onUpdate: (content: any) => void;
+}) {
+  const { searchByTrigger } = useEntityStore();
+  
+  const extensions = useMemo(() => [
+    StarterKit,
+    ...createMentionExtensions(projectId, searchByTrigger)
+  ], [projectId, searchByTrigger]);
+
+  const editor = useEditor({
+    extensions,
+    content,
+    editorProps: {
+      attributes: {
+        class: 'tiptap-editor-box',
+        style: 'min-height: 80px; outline: none; padding: 12px; font-size: 13px; line-height: 1.6;',
+        'data-placeholder': placeholder || '',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      onUpdate(editor.getJSON());
+    },
+  });
+
+  return <EditorContent editor={editor} />;
+}
 
 function ScriptBox({ 
   segment, 
   projectId, 
   index,
-  onUpdate, 
+  onUpdate,
+  onAddRow,
   onRemove, 
   availableBeats,
   isHighlighted,
@@ -23,8 +61,9 @@ function ScriptBox({
 }: { 
   segment: ScriptSegment; 
   projectId: string; 
-  index: number;
+  index: number; 
   onUpdate: (updates: Partial<ScriptSegment>) => void;
+  onAddRow: () => void;
   onRemove: () => void;
   availableBeats: { id: string, title: string }[];
   isHighlighted?: boolean;
@@ -32,25 +71,9 @@ function ScriptBox({
   onDragStart: () => void;
   onDragEnd: () => void;
 }) {
-  const { searchByTrigger } = useEntityStore();
   const dragControls = useDragControls();
   const containerRef = useRef<HTMLDivElement>(null);
-  
   const locations = useEntityStore(state => state.getByType(projectId, 'location'));
-  
-  const editor = useEditor({
-    extensions: [StarterKit, ...createMentionExtensions(projectId, searchByTrigger)],
-    content: segment.content,
-    editorProps: {
-      attributes: {
-        class: 'tiptap-editor-box',
-        style: 'min-height: 100px; outline: none; padding: 12px; font-size: 14px; line-height: 1.6;',
-      },
-    },
-    onUpdate: ({ editor }) => {
-      onUpdate({ content: editor.getJSON() });
-    },
-  });
 
   useEffect(() => {
     if (isHighlighted && containerRef.current) {
@@ -109,13 +132,13 @@ function ScriptBox({
             title="Drag to reorder"
           >
             <span style={{ fontSize: '16px' }}>⠿</span>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', minWidth: '24px' }}>#{index}</span>
+            <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-muted)', minWidth: '24px' }}>#{index + 1}</span>
           </div>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, opacity: isDragging ? 0.5 : 1 }}>
             {/* INT/EXT */}
             <select 
-              className="input-glass"
+              className="select-glass"
               style={{ padding: '2px 6px', fontSize: '11px', width: '56px', height: '24px', fontWeight: 'bold' }}
               value={segment.intExt || ''}
               onChange={(e) => onUpdate({ intExt: e.target.value as any })}
@@ -128,7 +151,7 @@ function ScriptBox({
 
             {/* Location Select */}
             <select 
-              className="input-glass"
+              className="select-glass"
               style={{ padding: '2px 6px', fontSize: '11px', flex: 1, minWidth: '100px', height: '24px' }}
               value={segment.locationId || ''}
               onChange={(e) => onUpdate({ locationId: e.target.value })}
@@ -144,8 +167,8 @@ function ScriptBox({
             <input 
               list={`times-${segment.id}`}
               placeholder="Time..."
-              className="input-glass"
-              style={{ padding: '2px 8px', fontSize: '11px', width: '80px', height: '24px' }}
+              className="input-glass text-[11px]"
+              style={{ padding: '2px 8px', width: '80px', height: '24px' }}
               value={segment.timeOfDay || ''}
               onChange={(e) => onUpdate({ timeOfDay: e.target.value })}
               disabled={isDragging}
@@ -161,7 +184,7 @@ function ScriptBox({
 
             {/* Story Beat Select */}
             <select 
-              className="input-glass"
+              className="select-glass"
               style={{ padding: '2px 6px', fontSize: '11px', width: '160px', height: '24px', opacity: 0.8 }}
               value={segment.beatId || ''}
               onChange={(e) => onUpdate({ beatId: e.target.value })}
@@ -184,15 +207,69 @@ function ScriptBox({
           >Remove</button>
         )}
       </div>
+      
+      {/* Single Column Layout */}
       <div 
         className="script-box-body" 
         style={{ 
           background: 'var(--bg-primary)', 
-          display: isDragging ? 'none' : 'block' 
+          display: isDragging ? 'none' : 'block',
+          minHeight: '80px'
         }}
       >
-        <EditorContent editor={editor} />
+        <div style={{ padding: '0px' }}>
+          <ScriptColumnEditor 
+            content={segment.content} 
+            projectId={projectId} 
+            placeholder="Start writing script..."
+            onUpdate={(content) => onUpdate({ content })} 
+          />
+        </div>
       </div>
+
+      {/* Row Insertion Handle (The fixed version of the "+" button) */}
+      {!isDragging && (
+        <div style={{ 
+          background: 'transparent', 
+          height: '4px',
+          display: 'flex', 
+          justifyContent: 'center',
+          position: 'absolute',
+          bottom: '-2px',
+          left: '50px',
+          right: '50px',
+          opacity: 0,
+          transition: 'all 0.2s',
+          zIndex: 10,
+          cursor: 'pointer'
+        }} className="hover-insertion-handle"
+        onClick={onAddRow}
+        >
+          <div style={{ 
+            width: '24px', height: '24px', borderRadius: '50%',
+            background: 'var(--color-primary)', color: 'white',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '18px', fontWeight: 'bold',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            transform: 'translateY(-10px)'
+          }}>
+            +
+          </div>
+        </div>
+      )}
+      
+      <style jsx>{`
+        .script-box-item {
+          position: relative;
+        }
+        .script-box-item:hover .hover-insertion-handle {
+          opacity: 1;
+        }
+        .hover-insertion-handle:hover div {
+          transform: translateY(-10px) scale(1.2);
+          background: #55f08d;
+        }
+      `}</style>
     </Reorder.Item>
   );
 }
@@ -206,7 +283,7 @@ export default function ScriptPage() {
   const [isDraggingGlobal, setIsDraggingGlobal] = useState(false);
   
   const segments = useScriptStore(state => state.segments[pid] || []);
-  const { addSegment, updateSegment, removeSegment, reorderSegments } = useScriptStore();
+  const { addSegment, insertSegment, updateSegment, removeSegment, reorderSegments } = useScriptStore();
   const beats = useStoryStore(state => state.beats[pid] || []);
   
   const [localItems, setLocalItems] = useState<ScriptSegment[]>(segments);
@@ -235,22 +312,27 @@ export default function ScriptPage() {
         borderBottom: '1px solid var(--border-glass)', background: 'var(--bg-secondary)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Script Writer</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Script Writer</span>
         </div>
-        <button className="btn-primary" onClick={() => addSegment(pid)} style={{ fontSize: '12px', padding: '6px 12px' }}>
-          + Add Script Box
+        <button 
+          className="btn-primary" 
+          onClick={() => addSegment(pid)} 
+          style={{ fontSize: '11px', padding: '6px 16px', fontWeight: 800, letterSpacing: '0.05em' }}
+        >
+          + ADD SCRIPT ROW
         </button>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
-        <div style={{ maxWidth: '850px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '100px' }}>
           {segments.length === 0 ? (
             <div style={{ 
-              textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)', 
-              border: '2px dashed var(--border-glass)', borderRadius: 'var(--radius-lg)' 
+              textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)', 
+              background: 'rgba(255,255,255,0.01)',
+              border: '1px dashed var(--border-glass)', borderRadius: 'var(--radius-lg)' 
             }}>
-              <p style={{ fontSize: '14px', marginBottom: '16px' }}>No script segments yet.</p>
-              <button className="btn-primary" onClick={() => addSegment(pid)}>Start Writing</button>
+              <p style={{ fontSize: '13px', marginBottom: '16px', letterSpacing: '0.05em' }}>EMPTY SCRIPT CANVAS</p>
+              <button className="btn-primary" onClick={() => addSegment(pid)}>START SCRIPTING</button>
             </div>
           ) : (
             <Reorder.Group 
@@ -264,10 +346,11 @@ export default function ScriptPage() {
                 <ScriptBox 
                    key={segment.id}
                    segment={segment}
-                   index={index + 1}
+                   index={index}
                    projectId={pid}
                    availableBeats={availableBeats}
                    onUpdate={(updates) => updateSegment(pid, segment.id, updates)}
+                   onAddRow={() => insertSegment(pid, index)}
                    onRemove={() => removeSegment(pid, segment.id)}
                    isHighlighted={focusedBeatId === segment.beatId}
                    isDragging={isDraggingGlobal}

@@ -5,6 +5,7 @@ import CommandPalette from '@/components/ui/CommandPalette';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import AssetEditModal from '@/components/vault/AssetEditModal';
 import { useState } from 'react';
+import { exportProject } from '@/lib/projectService';
 
 const TABS = [
   { key: 'story', label: '🗺️ Story Maker', path: 'story' },
@@ -56,6 +57,10 @@ export default function ProjectLayout() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <ThemeToggle />
+          <button className="btn-ghost" style={{ padding: '6px 14px', fontSize: '13px' }}
+            onClick={() => exportProject(projectId)}>
+            📤 Export
+          </button>
           <button className="btn-ghost" style={{
             padding: '6px 14px', fontSize: '13px',
             borderColor: showVault ? 'var(--accent-violet)' : undefined,
